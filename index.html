@@ -1,0 +1,2093 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>โมเดล 3D Pixel รถแข่ง F1 ครบ 11 ทีม</title>
+  <style>
+    :root {
+      --bg: #f3f5f8;
+      --surface: #ffffff;
+      --surface-subtle: #f8fafc;
+      --border: #e2e8f0;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --brand: #e10600;
+      --brand-ink: #ffffff;
+      --accent-ring: rgba(225, 6, 0, 0.25);
+      --stage-top: #1e293b;
+      --stage-bottom: #090e1a;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --font: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--space-4);
+      gap: var(--space-4);
+    }
+
+    /* Header */
+    .app-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: var(--space-3) var(--space-5);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brick-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      background: var(--brand);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      padding: 7px;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24);
+      flex-shrink: 0;
+      transition: background-color 0.25s ease;
+    }
+
+    .brick-logo span {
+      display: block;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .brick-logo span:nth-child(2),
+    .brick-logo span:nth-child(4),
+    .brick-logo span:nth-child(5),
+    .brick-logo span:nth-child(6),
+    .brick-logo span:nth-child(8) {
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 1.22rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .title-wrap p {
+      margin: 0;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .camera-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    /* Main Workspace */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+      flex: 1;
+    }
+
+    @media (min-width: 980px) {
+      .workspace {
+        grid-template-columns: minmax(0, 1fr) 360px;
+        align-items: stretch;
+      }
+    }
+
+    /* 3D Stage Card */
+    .stage-card {
+      position: relative;
+      background: radial-gradient(circle at 50% 36%, var(--stage-top) 0%, var(--stage-bottom) 100%);
+      border-radius: var(--radius-lg);
+      border: 1px solid #1e293b;
+      box-shadow: var(--shadow);
+      min-height: 460px;
+      height: clamp(460px, 72vh, 760px);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #viewport:active {
+      cursor: grabbing;
+    }
+
+    .stage-overlay-top {
+      position: absolute;
+      top: var(--space-4);
+      left: var(--space-4);
+      right: var(--space-4);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      gap: var(--space-2);
+    }
+
+    .stage-pill {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(8px);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.81rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stage-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: var(--brand);
+      display: inline-block;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .btn-reset-cam {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(8px);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-reset-cam:hover {
+      background: rgba(30, 41, 59, 0.94);
+      border-color: rgba(255, 255, 255, 0.34);
+    }
+
+    .btn-reset-cam:focus-visible {
+      outline: 2px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    .stage-hint {
+      position: absolute;
+      bottom: var(--space-3);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(8px);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.77rem;
+      white-space: nowrap;
+      max-width: calc(100% - 24px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    .stage-status {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      background: rgba(9, 14, 26, 0.92);
+      color: #f8fafc;
+      padding: var(--space-6);
+      text-align: center;
+      z-index: 5;
+    }
+
+    .stage-status[hidden] {
+      display: none;
+    }
+
+    .spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid rgba(255, 255, 255, 0.18);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Controls Sidebar */
+    .control-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .panel-section + .panel-section {
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border);
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
+
+    .section-value {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Buttons */
+    .btn {
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--surface-subtle);
+      border-color: #cbd5e1;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    .btn.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: var(--brand-ink);
+    }
+
+    /* 11 F1 Teams Selector Grid */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .team-btn {
+      font: inherit;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.14s ease;
+      min-width: 0;
+    }
+
+    .team-btn:hover {
+      background: var(--surface);
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .team-btn:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    .team-btn.active {
+      border-color: var(--ink);
+      background: var(--surface);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    .team-btn.span-full {
+      grid-column: 1 / -1;
+    }
+
+    .pixel-swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+    }
+
+    .pixel-swatch i {
+      display: block;
+    }
+
+    .team-meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      line-height: 1.2;
+    }
+
+    .team-name-en {
+      font-size: 0.79rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .team-name-th {
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Range Sliders */
+    .slider-control {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .slider-input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .slider-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 4px;
+      background: var(--brand);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+
+    .slider-input::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+    }
+
+    .slider-input::-moz-range-thumb {
+      width: 17px;
+      height: 17px;
+      border-radius: 4px;
+      background: var(--brand);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+      cursor: pointer;
+    }
+
+    .slider-input:focus-visible {
+      box-shadow: 0 0 0 3px var(--accent-ring);
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    /* Toggle Rows */
+    .toggle-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 11px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .toggle-item:hover {
+      border-color: #cbd5e1;
+    }
+
+    .toggle-label {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .switch-input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-track {
+      width: 38px;
+      height: 20px;
+      background: #cbd5e1;
+      border-radius: 5px;
+      position: relative;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .switch-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease;
+    }
+
+    .switch-input:checked + .switch-track {
+      background: var(--brand);
+    }
+
+    .switch-input:checked + .switch-track .switch-thumb {
+      transform: translateX(18px);
+    }
+
+    .switch-input:focus-visible + .switch-track {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* Parts Inspector Chips */
+    .parts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .part-btn {
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 7px 9px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .part-btn:hover {
+      background: var(--surface-subtle);
+      border-color: #cbd5e1;
+    }
+
+    .part-btn.active {
+      border-color: var(--brand);
+      background: rgba(225, 6, 0, 0.06);
+      color: var(--brand);
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        padding: var(--space-2);
+        gap: var(--space-3);
+      }
+      .app-header {
+        padding: var(--space-3);
+      }
+      .stage-card {
+        min-height: 360px;
+        height: 52vh;
+      }
+      .control-panel {
+        padding: var(--space-4);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brick-logo" id="brandLogo" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="title-wrap">
+          <h1>โมเดล 3D Pixel รถแข่ง F1 ครบ 11 ทีม</h1>
+          <p>สำรวจรถแข่ง F1 รูปแบบ 3D Voxel Pixel ครบทั้ง 11 ทีม หมุนชม 360° และแยกดูโครงสร้าง</p>
+        </div>
+      </div>
+
+      <nav class="camera-bar" aria-label="โหมดแสดงผลและมุมกล้อง">
+        <button type="button" class="btn cam-btn active" data-cam="grid11">กริดครบ 11 ทีม</button>
+        <button type="button" class="btn cam-btn" data-cam="iso">มุมมองรอบคัน</button>
+        <button type="button" class="btn cam-btn" data-cam="front">ด้านหน้า</button>
+        <button type="button" class="btn cam-btn" data-cam="side">ด้านข้าง</button>
+        <button type="button" class="btn cam-btn" data-cam="cockpit">ห้องนักขับ</button>
+        <button type="button" class="btn cam-btn" data-cam="rear">ด้านหลัง</button>
+      </nav>
+    </header>
+
+    <main class="workspace">
+      <section class="stage-card" aria-label="พื้นที่แสดงผลโมเดล 3D Pixel">
+        <canvas id="viewport"></canvas>
+
+        <div class="stage-overlay-top">
+          <div class="stage-pill">
+            <span class="stage-dot" id="liveryDot"></span>
+            <span id="liveryLabel">กริดสตาร์ท F1 ครบทั้ง 11 ทีม (3D Pixel)</span>
+          </div>
+          <button type="button" class="btn-reset-cam" id="resetCamBtn">รีเซ็ตมุมกล้อง</button>
+        </div>
+
+        <div class="stage-hint" id="stageHint">
+          คลิกที่รถในสนามเพื่อเจาะลึกแต่ละทีม • ลากหมุน 360° • เลื่อนลูกกลิ้งเพื่อซูม
+        </div>
+
+        <div class="stage-status" id="stageStatus">
+          <div class="spinner" id="statusSpinner"></div>
+          <div id="statusMessage">กำลังสร้างโมเดล 3D Pixel ทั้ง 11 ทีม...</div>
+        </div>
+      </section>
+
+      <aside class="control-panel" aria-label="แผงควบคุมโมเดล 3D Pixel">
+        <!-- All 11 Official F1 Teams -->
+        <div class="panel-section">
+          <h2 class="section-title">
+            <span>ทีมแข่ง F1 (ครบ 11 ทีม)</span>
+            <span class="section-value" id="liveryShortName">ครบ 11 ทีม</span>
+          </h2>
+          <div class="team-grid" id="teamGrid" role="radiogroup" aria-label="เลือกทีมแข่ง F1 ทั้ง 11 ทีม"></div>
+        </div>
+
+        <!-- Exploded View & Steering -->
+        <div class="panel-section">
+          <div class="slider-control">
+            <label class="section-title" for="explodeRange">
+              <span>แยกดูชิ้นส่วน (Exploded View)</span>
+              <span class="section-value" id="explodeValue">0%</span>
+            </label>
+            <input type="range" id="explodeRange" class="slider-input" min="0" max="100" value="0">
+            <div class="slider-labels">
+              <span>ประกอบสมบูรณ์</span>
+              <span>แยกโครงสร้าง Pixel</span>
+            </div>
+          </div>
+
+          <div class="slider-control" style="margin-top: 4px;">
+            <label class="section-title" for="steerRange">
+              <span>องศาเลี้ยวล้อหน้า &amp; พวงมาลัย</span>
+              <span class="section-value" id="steerValue">0°</span>
+            </label>
+            <input type="range" id="steerRange" class="slider-input" min="-22" max="22" value="0">
+            <div class="slider-labels">
+              <span>เลี้ยวซ้าย</span>
+              <span>ตรง</span>
+              <span>เลี้ยวขวา</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Simulation Toggles -->
+        <div class="panel-section">
+          <h2 class="section-title">การทำงานจำลอง</h2>
+          <div class="toggle-list">
+            <label class="toggle-item">
+              <span class="toggle-label">หมุนโชว์รอบคันอัตโนมัติ</span>
+              <input type="checkbox" id="autoRotateToggle" class="switch-input" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+
+            <label class="toggle-item">
+              <span class="toggle-label">หมุนล้อจำลองความเร็ว</span>
+              <input type="checkbox" id="wheelSpinToggle" class="switch-input">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+
+            <label class="toggle-item">
+              <span class="toggle-label">เปิดแผ่นปีกหลัง DRS</span>
+              <input type="checkbox" id="drsToggle" class="switch-input">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+
+            <label class="toggle-item">
+              <span class="toggle-label">แสดงพื้นสนามแข่ง 3D Pixel</span>
+              <input type="checkbox" id="baseplateToggle" class="switch-input" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sub-assembly Inspector -->
+        <div class="panel-section">
+          <h2 class="section-title">
+            <span>ไฮไลต์ชุดประกอบ</span>
+            <span class="section-value" id="focusPartLabel">ทั้งคัน</span>
+          </h2>
+          <div class="parts-grid">
+            <button type="button" class="part-btn active" data-part="all">แสดงทั้งคัน</button>
+            <button type="button" class="part-btn" data-part="frontWing">ปีกหน้า &amp; จมูกรถ</button>
+            <button type="button" class="part-btn" data-part="cockpit">ห้องนักขับ &amp; Halo</button>
+            <button type="button" class="part-btn" data-part="body">ไซด์พอด &amp; ฝาเครื่อง</button>
+            <button type="button" class="part-btn" data-part="rearWing">ปีกหลัง DRS</button>
+            <button type="button" class="part-btn" data-part="wheels">ล้อ &amp; ช่วงล่าง</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (function () {
+      const statusOverlay = document.getElementById('stageStatus');
+      const statusSpinner = document.getElementById('statusSpinner');
+      const statusMessage = document.getElementById('statusMessage');
+
+      if (typeof THREE === 'undefined') {
+        statusSpinner.style.display = 'none';
+        statusMessage.textContent = 'ไม่สามารถโหลดไลบรารีแสดงผล 3 มิติได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง';
+        return;
+      }
+
+      const canvas = document.getElementById('viewport');
+      let renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: canvas,
+          antialias: true,
+          alpha: true,
+          powerPreference: 'high-performance'
+        });
+      } catch (err) {
+        statusSpinner.style.display = 'none';
+        statusMessage.textContent = 'เบราว์เซอร์ของคุณไม่รองรับการแสดงผล WebGL 3 มิติ';
+        return;
+      }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.1;
+
+      const scene = new THREE.Scene();
+
+      // Official 11 Formula 1 Teams (2026 Grid Liveries)
+      const F1_TEAMS = [
+        {
+          id: 'mclaren',
+          en: 'McLaren',
+          th: 'แมคลาเรน',
+          fullLabel: 'McLaren Formula 1 Team (ส้ม Papaya & ดำ)',
+          uiColor: '#ff8000',
+          swatch: ['#ff8000', '#ff8000', '#1b1f26', '#38bdf8'],
+          primaryL: 0xff8000,
+          primaryR: 0xff8000,
+          secondary: 0x1b1f26,
+          accent: 0x38bdf8,
+          noseTip: 0xff8000,
+          halo: 0x181a20,
+          suit: 0xff8000,
+          helmet: 0xd9f99d
+        },
+        {
+          id: 'ferrari',
+          en: 'Ferrari',
+          th: 'เฟอร์รารี',
+          fullLabel: 'Scuderia Ferrari (แดง Rosso Corsa & ขาว)',
+          uiColor: '#e10600',
+          swatch: ['#e10600', '#e10600', '#f8fafc', '#facc15'],
+          primaryL: 0xe10600,
+          primaryR: 0xe10600,
+          secondary: 0xf8fafc,
+          accent: 0xfacc15,
+          noseTip: 0xe10600,
+          halo: 0xe10600,
+          suit: 0xe10600,
+          helmet: 0xfacc15
+        },
+        {
+          id: 'redbull',
+          en: 'Red Bull Racing',
+          th: 'เรดบูล เรซซิ่ง',
+          fullLabel: 'Oracle Red Bull Racing (น้ำเงินเข้ม & เหลือง-แดง)',
+          uiColor: '#1d4ed8',
+          swatch: ['#172b69', '#172b69', '#facc15', '#ef233c'],
+          primaryL: 0x172b69,
+          primaryR: 0x172b69,
+          secondary: 0x0f172a,
+          accent: 0xef233c,
+          noseTip: 0xfacc15,
+          halo: 0x172b69,
+          suit: 0x172b69,
+          helmet: 0xf8fafc
+        },
+        {
+          id: 'mercedes',
+          en: 'Mercedes',
+          th: 'เมอร์เซเดส',
+          fullLabel: 'Mercedes-AMG PETRONAS (เงิน-ดำ & เขียวเทอร์ควอยซ์)',
+          uiColor: '#0d9488',
+          swatch: ['#cbd5e1', '#14171c', '#14171c', '#27f4d2'],
+          primaryL: 0xcbd5e1,
+          primaryR: 0xcbd5e1,
+          secondary: 0x14171c,
+          accent: 0x27f4d2,
+          noseTip: 0xcbd5e1,
+          halo: 0x14171c,
+          suit: 0x14171c,
+          helmet: 0x27f4d2
+        },
+        {
+          id: 'astonmartin',
+          en: 'Aston Martin',
+          th: 'แอสตัน มาร์ติน',
+          fullLabel: 'Aston Martin Aramco (เขียวเรซซิ่ง & เขียวมะนาว)',
+          uiColor: '#00665e',
+          swatch: ['#00665e', '#00665e', '#064e3b', '#bef264'],
+          primaryL: 0x00665e,
+          primaryR: 0x00665e,
+          secondary: 0x064e3b,
+          accent: 0xbef264,
+          noseTip: 0x00665e,
+          halo: 0x00665e,
+          suit: 0x00665e,
+          helmet: 0xbef264
+        },
+        {
+          id: 'alpine',
+          en: 'Alpine',
+          th: 'อัลพีน',
+          fullLabel: 'BWT Alpine F1 Team (น้ำเงินอัลพีน & ชมพู)',
+          uiColor: '#0284c7',
+          swatch: ['#0078ff', '#0078ff', '#ff7eb6', '#161b26'],
+          primaryL: 0x0078ff,
+          primaryR: 0x0078ff,
+          secondary: 0x161b26,
+          accent: 0xff7eb6,
+          noseTip: 0xff7eb6,
+          halo: 0x161b26,
+          suit: 0x0078ff,
+          helmet: 0xff7eb6
+        },
+        {
+          id: 'williams',
+          en: 'Williams',
+          th: 'วิลเลียมส์',
+          fullLabel: 'Atlassian Williams Racing (น้ำเงินรอยัลบลู & ฟ้า)',
+          uiColor: '#005aff',
+          swatch: ['#005aff', '#005aff', '#0a1936', '#64c4ff'],
+          primaryL: 0x005aff,
+          primaryR: 0x005aff,
+          secondary: 0x0a1936,
+          accent: 0x64c4ff,
+          noseTip: 0x005aff,
+          halo: 0x0a1936,
+          suit: 0x005aff,
+          helmet: 0xf8fafc
+        },
+        {
+          id: 'racingbulls',
+          en: 'Racing Bulls',
+          th: 'เรซซิ่ง บูลส์',
+          fullLabel: 'Visa Cash App Racing Bulls (ขาว & น้ำเงิน-แดง)',
+          uiColor: '#2563eb',
+          swatch: ['#f8fafc', '#f8fafc', '#2563eb', '#ef4444'],
+          primaryL: 0xf8fafc,
+          primaryR: 0xf8fafc,
+          secondary: 0x2563eb,
+          accent: 0xef4444,
+          noseTip: 0xf8fafc,
+          halo: 0x2563eb,
+          suit: 0xf8fafc,
+          helmet: 0x2563eb
+        },
+        {
+          id: 'audi',
+          en: 'Audi',
+          th: 'อาวดี้',
+          fullLabel: 'Audi F1 Team (เงินไทเทเนียม, ดำคาร์บอน & แดงลาวา)',
+          uiColor: '#e11d48',
+          swatch: ['#c8ced4', '#16181d', '#16181d', '#f50537'],
+          primaryL: 0xc8ced4,
+          primaryR: 0xc8ced4,
+          secondary: 0x16181d,
+          accent: 0xf50537,
+          noseTip: 0xf50537,
+          halo: 0x16181d,
+          suit: 0x16181d,
+          helmet: 0xf50537
+        },
+        {
+          id: 'haas',
+          en: 'Haas',
+          th: 'ฮาส',
+          fullLabel: 'Haas F1 Team (ขาวมุก, แดงเรซซิ่ง & ดำ)',
+          uiColor: '#dc2626',
+          swatch: ['#f8fafc', '#f8fafc', '#181a20', '#e6002b'],
+          primaryL: 0xf8fafc,
+          primaryR: 0xf8fafc,
+          secondary: 0x181a20,
+          accent: 0xe6002b,
+          noseTip: 0xf8fafc,
+          halo: 0x181a20,
+          suit: 0xf8fafc,
+          helmet: 0xe6002b
+        },
+        {
+          id: 'cadillac',
+          en: 'Cadillac',
+          th: 'คาดิลแลค (ทูโทน ขาว-ดำ)',
+          fullLabel: 'Cadillac F1 Team (ลวดลายแบ่งครึ่งซ้าย-ขวา ขาว & ดำ)',
+          uiColor: '#334155',
+          swatch: ['#f4f6f9', '#14171f', '#f4f6f9', '#eab308'],
+          primaryL: 0xf4f6f9,
+          primaryR: 0x14171f,
+          secondary: 0x334155,
+          accent: 0xeab308,
+          noseTip: 0x94a3b8,
+          halo: 0x14171f,
+          suit: 0x14171f,
+          helmet: 0xf4f6f9
+        }
+      ];
+
+      // Camera & Orbit State
+      const camera = new THREE.PerspectiveCamera(38, 16 / 10, 0.5, 240);
+      const camState = {
+        theta: 0.48,
+        phi: 1.02,
+        radius: 49.0,
+        target: new THREE.Vector3(0, 1.2, -1.5),
+        goalTheta: 0.48,
+        goalPhi: 1.02,
+        goalRadius: 49.0,
+        goalTarget: new THREE.Vector3(0, 1.2, -1.5)
+      };
+
+      const CAM_PRESETS = {
+        grid11:  { theta: 0.48,  phi: 1.02, radius: 49.0, target: [0, 1.2, -1.5] },
+        iso:     { theta: 0.68,  phi: 1.15, radius: 20.5, target: [0, 1.4, 0.2] },
+        front:   { theta: 0.0,   phi: 1.34, radius: 17.5, target: [0, 1.2, 1.5] },
+        side:    { theta: 1.57,  phi: 1.38, radius: 20.0, target: [0, 1.3, 0.1] },
+        cockpit: { theta: 0.38,  phi: 1.04, radius: 10.5, target: [0, 2.2, 0.5] },
+        rear:    { theta: 2.75,  phi: 1.22, radius: 18.5, target: [0, 1.5, -1.2] }
+      };
+
+      // Studio Lighting tuned for crisp 3D Voxel / Pixel cubes
+      const hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x1e293b, 0.88);
+      hemiLight.position.set(0, 35, 0);
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
+      keyLight.position.set(18, 32, 22);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 4;
+      keyLight.shadow.camera.far = 110;
+      keyLight.shadow.bias = -0.0005;
+      scene.add(keyLight);
+
+      function updateShadowBounds(isGrid) {
+        const d = isGrid ? 30 : 12;
+        keyLight.shadow.camera.left = -d;
+        keyLight.shadow.camera.right = d;
+        keyLight.shadow.camera.top = d;
+        keyLight.shadow.camera.bottom = -d;
+        keyLight.shadow.camera.updateProjectionMatrix();
+      }
+      updateShadowBounds(true);
+
+      const fillLight = new THREE.DirectionalLight(0xbfdbfe, 0.46);
+      fillLight.position.set(-20, 14, -14);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0xfde68a, 0.30);
+      rimLight.position.set(0, 12, -26);
+      scene.add(rimLight);
+
+      // Shared Static Materials across all 3D Pixel models
+      const staticMats = {
+        carbon: new THREE.MeshStandardMaterial({ color: 0x181a20, roughness: 0.34, metalness: 0.08 }),
+        darkGrey: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.32, metalness: 0.10 }),
+        metal: new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.25, metalness: 0.76 }),
+        rubber: new THREE.MeshStandardMaterial({ color: 0x121316, roughness: 0.85, metalness: 0.03 }),
+        visor: new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.09, metalness: 0.65 }),
+        white: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.24, metalness: 0.04 }),
+        glowRed: new THREE.MeshStandardMaterial({
+          color: 0xef4444,
+          emissive: 0xdc2626,
+          emissiveIntensity: 0.7,
+          roughness: 0.18
+        }),
+        glowCyan: new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.55,
+          roughness: 0.2
+        }),
+        asphalt: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.62, metalness: 0.04 }),
+        asphaltDark: new THREE.MeshStandardMaterial({ color: 0x151e2e, roughness: 0.65, metalness: 0.04 }),
+        kerbRed: new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.36, metalness: 0.04 })
+      };
+
+      function createTeamMatSet(team) {
+        return {
+          primaryL: new THREE.MeshStandardMaterial({ color: team.primaryL, roughness: 0.24, metalness: 0.07 }),
+          primaryR: new THREE.MeshStandardMaterial({ color: team.primaryR, roughness: 0.24, metalness: 0.07 }),
+          secondary: new THREE.MeshStandardMaterial({ color: team.secondary, roughness: 0.28, metalness: 0.07 }),
+          accent: new THREE.MeshStandardMaterial({ color: team.accent, roughness: 0.24, metalness: 0.06 }),
+          noseTip: new THREE.MeshStandardMaterial({ color: team.noseTip, roughness: 0.24, metalness: 0.07 }),
+          halo: new THREE.MeshStandardMaterial({ color: team.halo, roughness: 0.28, metalness: 0.10 }),
+          suit: new THREE.MeshStandardMaterial({ color: team.suit, roughness: 0.34, metalness: 0.04 }),
+          helmet: new THREE.MeshStandardMaterial({ color: team.helmet, roughness: 0.20, metalness: 0.08 })
+        };
+      }
+
+      function applyTeamToMatSet(matSet, team) {
+        matSet.primaryL.color.setHex(team.primaryL);
+        matSet.primaryR.color.setHex(team.primaryR);
+        matSet.secondary.color.setHex(team.secondary);
+        matSet.accent.color.setHex(team.accent);
+        matSet.noseTip.color.setHex(team.noseTip);
+        matSet.halo.color.setHex(team.halo);
+        matSet.suit.color.setHex(team.suit);
+        matSet.helmet.color.setHex(team.helmet);
+      }
+
+      // ============================================================
+      // 3D PIXEL (VOXEL) CAR BLUEPRINT GENERATOR
+      // Every sub-assembly is pure cubic 3D pixels on an integer grid
+      // ============================================================
+      const V = 0.22; // 1 Voxel grid unit
+      const voxelBoxGeo = new THREE.BoxGeometry(V * 0.935, V * 0.935, V * 0.935);
+      const microVoxelGeo = new THREE.BoxGeometry(V * 0.56, V * 0.56, V * 0.56);
+
+      function createVoxelMap() {
+        return new Map();
+      }
+
+      function resolveSideRole(role, vx) {
+        if (role === 'primary') {
+          return vx < 0 ? 'primaryR' : 'primaryL';
+        }
+        return role;
+      }
+
+      function setVox(map, vx, vy, vz, role) {
+        map.set(vx + ',' + vy + ',' + vz, {
+          x: vx * V,
+          y: (vy + 0.5) * V,
+          z: vz * V,
+          role: resolveSideRole(role, vx)
+        });
+      }
+
+      function delVox(map, vx, vy, vz) {
+        map.delete(vx + ',' + vy + ',' + vz);
+      }
+
+      function fillBox(map, x1, x2, y1, y2, z1, z2, role) {
+        const xa = Math.min(x1, x2), xb = Math.max(x1, x2);
+        const ya = Math.min(y1, y2), yb = Math.max(y1, y2);
+        const za = Math.min(z1, z2), zb = Math.max(z1, z2);
+        for (let x = xa; x <= xb; x++) {
+          for (let y = ya; y <= yb; y++) {
+            for (let z = za; z <= zb; z++) {
+              setVox(map, x, y, z, role);
+            }
+          }
+        }
+      }
+
+      function carveBox(map, x1, x2, y1, y2, z1, z2) {
+        const xa = Math.min(x1, x2), xb = Math.max(x1, x2);
+        const ya = Math.min(y1, y2), yb = Math.max(y1, y2);
+        const za = Math.min(z1, z2), zb = Math.max(z1, z2);
+        for (let x = xa; x <= xb; x++) {
+          for (let y = ya; y <= yb; y++) {
+            for (let z = za; z <= zb; z++) {
+              delVox(map, x, y, z);
+            }
+          }
+        }
+      }
+
+      // 3D Pixel line (Bresenham-style) for pure voxel suspension wishbones
+      function drawVoxelLine(map, x0, y0, z0, x1, y1, z1, role) {
+        const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0));
+        for (let i = 0; i <= steps; i++) {
+          const t = steps === 0 ? 0 : i / steps;
+          const vx = Math.round(x0 + (x1 - x0) * t);
+          const vy = Math.round(y0 + (y1 - y0) * t);
+          const vz = Math.round(z0 + (z1 - z0) * t);
+          setVox(map, vx, vy, vz, role);
+        }
+      }
+
+      // Build all static sub-assembly voxel blueprints once
+      const BLUEPRINTS = {};
+
+      // 1. Floor & Rear Diffuser
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, -4, 4, 2, 2, -21, 20, 'carbon');
+        fillBox(m, -12, 12, 2, 2, -13, 10, 'carbon');
+        fillBox(m, 12, 12, 3, 3, -11, 9, 'darkGrey');
+        fillBox(m, -12, -12, 3, 3, -11, 9, 'darkGrey');
+        fillBox(m, 12, 12, 3, 3, -3, 4, 'accent');
+        fillBox(m, -12, -12, 3, 3, -3, 4, 'accent');
+        fillBox(m, 11, 11, 3, 5, 8, 11, 'carbon');
+        fillBox(m, -11, -11, 3, 5, 8, 11, 'carbon');
+        delVox(m, 11, 5, 11);
+        delVox(m, -11, 5, 11);
+        fillBox(m, -8, 8, 3, 3, -22, -21, 'carbon');
+        fillBox(m, -8, 8, 4, 4, -24, -23, 'carbon');
+        [-8, -4, 0, 4, 8].forEach(function (fx) {
+          fillBox(m, fx, fx, 2, 4, -24, -22, 'darkGrey');
+        });
+        BLUEPRINTS.floor = Array.from(m.values());
+      })();
+
+      // 2. Monocoque & Tapered Nose Cone
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, -4, 4, 3, 7, 3, 12, 'primary');
+        fillBox(m, -3, 3, 7, 7, 4, 9, 'secondary');
+        fillBox(m, -3, 3, 3, 6, 13, 17, 'primary');
+        fillBox(m, -2, 2, 7, 7, 13, 15, 'primary');
+        fillBox(m, -1, 1, 7, 7, 14, 15, 'white');
+        setVox(m, 0, 7, 15, 'accent');
+        fillBox(m, -2, 2, 3, 5, 18, 22, 'primary');
+        fillBox(m, -1, 1, 6, 6, 18, 20, 'primary');
+        fillBox(m, -2, 2, 3, 4, 23, 26, 'primary');
+        fillBox(m, -1, 1, 2, 3, 27, 30, 'noseTip');
+        setVox(m, 0, 2, 31, 'noseTip');
+        fillBox(m, -2, -2, 2, 3, 26, 28, 'carbon');
+        fillBox(m, 2, 2, 2, 3, 26, 28, 'carbon');
+        BLUEPRINTS.nose = Array.from(m.values());
+      })();
+
+      // 3. Swept Multi-Element Voxel Front Wing
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, -4, 4, 1, 1, 28, 32, 'carbon');
+        fillBox(m, -3, 3, 1, 1, 33, 33, 'accent');
+        [-1, 1].forEach(function (s) {
+          fillBox(m, s * 5, s * 7, 1, 1, 27, 31, 'carbon');
+          fillBox(m, s * 5, s * 7, 2, 2, 27, 29, 'primary');
+          fillBox(m, s * 5, s * 7, 3, 3, 26, 27, 'accent');
+
+          fillBox(m, s * 8, s * 10, 1, 1, 26, 30, 'carbon');
+          fillBox(m, s * 8, s * 10, 2, 2, 26, 28, 'primary');
+          fillBox(m, s * 8, s * 10, 3, 3, 25, 26, 'accent');
+
+          fillBox(m, s * 11, s * 15, 1, 1, 25, 29, 'carbon');
+          fillBox(m, s * 11, s * 15, 2, 2, 25, 28, 'primary');
+          fillBox(m, s * 11, s * 15, 3, 3, 24, 26, 'accent');
+
+          fillBox(m, s * 16, s * 16, 1, 5, 24, 30, 'primary');
+          fillBox(m, s * 16, s * 16, 6, 6, 24, 27, 'accent');
+          delVox(m, s * 16, 5, 30);
+          delVox(m, s * 16, 4, 30);
+          fillBox(m, s * 16, s * 16, 3, 3, 27, 29, 'carbon');
+        });
+        BLUEPRINTS.frontWing = Array.from(m.values());
+      })();
+
+      // 4. Sculpted Sidepods (Left & Right)
+      function buildSidepodBlueprint(s) {
+        const m = createVoxelMap();
+        fillBox(m, s * 5, s * 8, 3, 3, -8, 8, 'carbon');
+        fillBox(m, s * 5, s * 10, 4, 7, -3, 9, 'primary');
+        carveBox(m, s * 6, s * 9, 4, 6, 9, 9);
+        fillBox(m, s * 6, s * 9, 4, 6, 8, 8, 'carbon');
+        fillBox(m, s * 10, s * 10, 4, 4, -3, 7, 'secondary');
+        fillBox(m, s * 10, s * 10, 5, 5, -4, 8, 'accent');
+        [-2, 0, 2].forEach(function (lz) {
+          setVox(m, s * 7, 7, lz, 'carbon');
+        });
+        fillBox(m, s * 5, s * 9, 4, 6, -8, -4, 'primary');
+        fillBox(m, s * 9, s * 9, 4, 4, -8, -4, 'secondary');
+        fillBox(m, s * 9, s * 9, 5, 5, -8, -4, 'accent');
+        fillBox(m, s * 4, s * 7, 4, 5, -13, -9, 'secondary');
+        fillBox(m, s * 6, s * 8, 8, 8, 6, 6, 'carbon');
+        fillBox(m, s * 8, s * 9, 9, 9, 6, 7, 'primary');
+        return Array.from(m.values());
+      }
+      BLUEPRINTS.sidepodL = buildSidepodBlueprint(1);
+      BLUEPRINTS.sidepodR = buildSidepodBlueprint(-1);
+
+      // 5. Engine Cover, Airbox, T-Cam, Shark Fin & Exhaust
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, -3, 3, 3, 6, -20, -4, 'secondary');
+        fillBox(m, -2, 2, 7, 9, -8, -3, 'primary');
+        fillBox(m, -2, 2, 7, 8, -13, -9, 'primary');
+        fillBox(m, -1, 1, 6, 7, -18, -14, 'primary');
+
+        fillBox(m, -2, 2, 10, 11, -7, -3, 'noseTip');
+        fillBox(m, -1, 1, 12, 12, -7, -3, 'noseTip');
+        fillBox(m, -1, 1, 10, 11, -3, -3, 'carbon');
+
+        setVox(m, 0, 13, -5, 'carbon');
+        fillBox(m, -2, 2, 14, 14, -5, -5, 'accent');
+
+        fillBox(m, 0, 0, 8, 11, -18, -8, 'secondary');
+        fillBox(m, 0, 0, 12, 12, -18, -8, 'accent');
+
+        fillBox(m, -1, 1, 5, 6, -22, -20, 'metal');
+        setVox(m, 0, 5, -22, 'carbon');
+        setVox(m, 0, 6, -22, 'carbon');
+        fillBox(m, 0, 0, 3, 4, -23, -23, 'glowRed');
+
+        BLUEPRINTS.engine = Array.from(m.values());
+      })();
+
+      // 6. Cockpit, Voxel Driver, Helmet & Stepped Pixel Halo
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, -3, 3, 3, 4, -3, 3, 'carbon');
+        fillBox(m, 4, 4, 8, 9, -3, 4, 'carbon');
+        fillBox(m, -4, -4, 8, 9, -3, 4, 'carbon');
+        fillBox(m, -2, 2, 8, 10, -3, -2, 'carbon');
+        fillBox(m, 0, 0, 7, 8, 5, 6, 'darkGrey');
+
+        fillBox(m, -2, 2, 5, 8, -1, 1, 'suit');
+        fillBox(m, 2, 2, 7, 7, 2, 3, 'suit');
+        fillBox(m, -2, -2, 7, 7, 2, 3, 'suit');
+        setVox(m, 2, 7, 4, 'accent');
+        setVox(m, -2, 7, 4, 'accent');
+
+        fillBox(m, -2, 2, 9, 12, -1, 2, 'helmet');
+        delVox(m, 2, 12, -1);
+        delVox(m, -2, 12, -1);
+        delVox(m, 2, 12, 2);
+        delVox(m, -2, 12, 2);
+        fillBox(m, 0, 0, 12, 12, -1, 2, 'accent');
+        fillBox(m, -2, 2, 9, 9, 2, 2, 'accent');
+        fillBox(m, -2, 2, 10, 11, 2, 2, 'visor');
+
+        setVox(m, 0, 8, 6, 'halo');
+        setVox(m, 0, 9, 6, 'halo');
+        setVox(m, 0, 10, 5, 'halo');
+        setVox(m, 0, 11, 5, 'halo');
+        [-1, 1].forEach(function (s) {
+          setVox(m, s * 1, 11, 5, 'halo');
+          setVox(m, s * 2, 11, 4, 'halo');
+          setVox(m, s * 2, 11, 3, 'halo');
+          setVox(m, s * 3, 11, 2, 'halo');
+          setVox(m, s * 3, 11, 1, 'halo');
+          setVox(m, s * 3, 11, 0, 'halo');
+          setVox(m, s * 3, 10, -1, 'halo');
+          setVox(m, s * 3, 10, -2, 'halo');
+        });
+
+        BLUEPRINTS.cockpit = Array.from(m.values());
+      })();
+
+      // Steerable Micro-Voxel Steering Wheel Blueprint
+      const STEER_WHEEL_VOXELS = (function () {
+        const list = [];
+        const mv = V * 0.58;
+        for (let x = -3; x <= 3; x++) {
+          for (let y = -2; y <= 2; y++) {
+            if (Math.abs(x) <= 1 && y === -2) continue;
+            if (x === 0 && y === 2) continue;
+            let role = 'carbon';
+            if (y === 1 && Math.abs(x) <= 1) role = 'glowCyan';
+            else if (y === 2 && Math.abs(x) === 1) role = 'glowRed';
+            else if (y === 0 && Math.abs(x) === 2) role = 'accent';
+            list.push({ x: x * mv, y: y * mv, z: 0, role: role });
+          }
+        }
+        return list;
+      })();
+
+      // 7. Rear Wing Static Structure + Movable DRS Voxel Flap
+      (function () {
+        const m = createVoxelMap();
+        fillBox(m, 1, 1, 7, 12, -21, -20, 'carbon');
+        fillBox(m, -1, -1, 7, 12, -21, -20, 'carbon');
+        fillBox(m, -10, 10, 11, 11, -24, -21, 'carbon');
+        fillBox(m, -10, 10, 11, 11, -20, -20, 'secondary');
+
+        [-1, 1].forEach(function (s) {
+          fillBox(m, s * 11, s * 11, 8, 14, -25, -20, 'primary');
+          carveBox(m, s * 11, s * 11, 8, 9, -21, -20);
+          delVox(m, s * 11, 14, -25);
+          fillBox(m, s * 11, s * 11, 8, 9, -25, -22, 'secondary');
+          fillBox(m, s * 11, s * 11, 14, 14, -24, -20, 'accent');
+        });
+        BLUEPRINTS.rearWingStatic = Array.from(m.values());
+
+        const drs = [];
+        for (let vx = -10; vx <= 10; vx++) {
+          drs.push({ x: vx * V, y: 0, z: 0.2 * V, role: 'accent' });
+          drs.push({ x: vx * V, y: -0.15 * V, z: 1.2 * V, role: resolveSideRole('primary', vx) });
+          drs.push({ x: vx * V, y: -0.3 * V, z: 2.2 * V, role: resolveSideRole('primary', vx) });
+        }
+        BLUEPRINTS.drsFlap = drs;
+      })();
+
+      // 8. Pure Voxel Suspension Wishbones
+      (function () {
+        const m = createVoxelMap();
+        [-1, 1].forEach(function (s) {
+          drawVoxelLine(m, s * 3, 6, 21, s * 10, 6, 19, 'carbon');
+          drawVoxelLine(m, s * 3, 6, 16, s * 10, 6, 19, 'carbon');
+          drawVoxelLine(m, s * 3, 4, 21, s * 10, 4, 19, 'carbon');
+          drawVoxelLine(m, s * 3, 4, 16, s * 10, 4, 19, 'carbon');
+          drawVoxelLine(m, s * 3, 7, 18, s * 9, 5, 19, 'darkGrey');
+
+          drawVoxelLine(m, s * 3, 7, -16, s * 9, 7, -19, 'carbon');
+          drawVoxelLine(m, s * 3, 7, -21, s * 9, 7, -19, 'carbon');
+          drawVoxelLine(m, s * 3, 4, -16, s * 9, 4, -19, 'carbon');
+          drawVoxelLine(m, s * 3, 4, -21, s * 9, 4, -19, 'carbon');
+          drawVoxelLine(m, s * 3, 8, -17, s * 9, 5, -19, 'darkGrey');
+        });
+        BLUEPRINTS.susp = Array.from(m.values());
+      })();
+
+      // 9. Voxel Slick Wheels Blueprint
+      function buildWheelVoxels(isFront, sideSign) {
+        const spinList = [];
+        const browList = [];
+        const layers = isFront ? 6 : 7;
+        const halfLayer = (layers - 1) / 2;
+        const maxGridR = isFront ? 5 : 6;
+        const outerLimit = isFront ? 5.25 : 6.25;
+        const bevelLimit = isFront ? 4.65 : 5.55;
+        const ringMin = isFront ? 3.05 : 3.60;
+        const ringMax = isFront ? 3.95 : 4.55;
+        const spokeMax = isFront ? 2.55 : 3.05;
+
+        for (let ix = 0; ix < layers; ix++) {
+          const isEdge = (ix === 0 || ix === layers - 1);
+          const isOuterFace = (ix === layers - 1);
+          const lx = (ix - halfLayer) * sideSign * V;
+
+          for (let dy = -maxGridR; dy <= maxGridR; dy++) {
+            for (let dz = -maxGridR; dz <= maxGridR; dz++) {
+              const r = Math.hypot(dy, dz);
+              if (r > (isEdge ? bevelLimit : outerLimit)) continue;
+
+              let role = 'rubber';
+              if (isOuterFace) {
+                if (r >= ringMin && r <= ringMax) {
+                  role = 'accent';
+                } else if (r < ringMin) {
+                  if ((dy === 0 || dz === 0) && r >= 0.8 && r <= spokeMax) {
+                    role = 'metal';
+                  } else {
+                    role = 'carbon';
+                  }
+                }
+              }
+              spinList.push({ x: lx, y: dy * V, z: dz * V, role: role });
+            }
+          }
+        }
+
+        spinList.push({
+          x: (halfLayer + 0.85) * sideSign * V,
+          y: 0,
+          z: 0,
+          role: sideSign > 0 ? 'primaryL' : 'primaryR'
+        });
+
+        if (isFront) {
+          const bx = -(halfLayer + 0.9) * sideSign * V;
+          for (let dz = -3; dz <= 1; dz++) {
+            browList.push({ x: bx, y: 4.5 * V, z: dz * V, role: 'carbon' });
+            if (dz >= -2 && dz <= 0) {
+              browList.push({ x: bx + sideSign * V, y: 5.5 * V, z: dz * V, role: 'carbon' });
+            }
+          }
+        }
+
+        return { spin: spinList, brow: browList };
+      }
+
+      const WHEEL_BP = {
+        FL: buildWheelVoxels(true, 1),
+        FR: buildWheelVoxels(true, -1),
+        RL: buildWheelVoxels(false, 1),
+        RR: buildWheelVoxels(false, -1)
+      };
+
+      function populateVoxelGroup(targetGroup, voxels, teamMatSet, customBoxGeo) {
+        const geo = customBoxGeo || voxelBoxGeo;
+        const buckets = {};
+        for (let i = 0; i < voxels.length; i++) {
+          const v = voxels[i];
+          if (!buckets[v.role]) buckets[v.role] = [];
+          buckets[v.role].push(v);
+        }
+
+        const dummy = new THREE.Object3D();
+        Object.keys(buckets).forEach(function (role) {
+          const list = buckets[role];
+          const mat = teamMatSet[role] || staticMats[role] || staticMats.carbon;
+          const imesh = new THREE.InstancedMesh(geo, mat, list.length);
+          imesh.castShadow = true;
+          imesh.receiveShadow = true;
+          for (let i = 0; i < list.length; i++) {
+            dummy.position.set(list[i].x, list[i].y, list[i].z);
+            dummy.updateMatrix();
+            imesh.setMatrixAt(i, dummy.matrix);
+          }
+          imesh.instanceMatrix.needsUpdate = true;
+          targetGroup.add(imesh);
+        });
+      }
+
+      // ============================================================
+      // BUILD INTERACTIVE HERO CAR (Single-Team Detailed View)
+      // ============================================================
+      const heroMats = createTeamMatSet(F1_TEAMS[0]);
+      const heroCarRoot = new THREE.Group();
+      scene.add(heroCarRoot);
+
+      const assemblies = {
+        floor:     { group: new THREE.Group(), offset: new THREE.Vector3(0, -1.8, 0), partKey: 'body' },
+        frontWing: { group: new THREE.Group(), offset: new THREE.Vector3(0, -0.4, 3.4), partKey: 'frontWing' },
+        nose:      { group: new THREE.Group(), offset: new THREE.Vector3(0, 0.6, 2.0), partKey: 'frontWing' },
+        sidepodL:  { group: new THREE.Group(), offset: new THREE.Vector3(2.4, 0.3, 0), partKey: 'body' },
+        sidepodR:  { group: new THREE.Group(), offset: new THREE.Vector3(-2.4, 0.3, 0), partKey: 'body' },
+        engine:    { group: new THREE.Group(), offset: new THREE.Vector3(0, 1.8, -1.2), partKey: 'body' },
+        cockpit:   { group: new THREE.Group(), offset: new THREE.Vector3(0, 2.5, 0.4), partKey: 'cockpit' },
+        rearWing:  { group: new THREE.Group(), offset: new THREE.Vector3(0, 1.6, -3.2), partKey: 'rearWing' },
+        wheelFL:   { group: new THREE.Group(), offset: new THREE.Vector3(2.8, 0.2, 1.2), partKey: 'wheels' },
+        wheelFR:   { group: new THREE.Group(), offset: new THREE.Vector3(-2.8, 0.2, 1.2), partKey: 'wheels' },
+        wheelRL:   { group: new THREE.Group(), offset: new THREE.Vector3(2.8, 0.2, -1.2), partKey: 'wheels' },
+        wheelRR:   { group: new THREE.Group(), offset: new THREE.Vector3(-2.8, 0.2, -1.2), partKey: 'wheels' },
+        susp:      { group: new THREE.Group(), offset: new THREE.Vector3(0, -0.5, 0), partKey: 'wheels' }
+      };
+
+      Object.keys(assemblies).forEach(function (k) {
+        heroCarRoot.add(assemblies[k].group);
+      });
+
+      const allSpinGroups = [];
+      const allSteerPivots = [];
+      const allDrsPivots = [];
+      let heroSteerWheelPivot = null;
+
+      populateVoxelGroup(assemblies.floor.group, BLUEPRINTS.floor, heroMats);
+      populateVoxelGroup(assemblies.nose.group, BLUEPRINTS.nose, heroMats);
+      populateVoxelGroup(assemblies.frontWing.group, BLUEPRINTS.frontWing, heroMats);
+      populateVoxelGroup(assemblies.sidepodL.group, BLUEPRINTS.sidepodL, heroMats);
+      populateVoxelGroup(assemblies.sidepodR.group, BLUEPRINTS.sidepodR, heroMats);
+      populateVoxelGroup(assemblies.engine.group, BLUEPRINTS.engine, heroMats);
+      populateVoxelGroup(assemblies.cockpit.group, BLUEPRINTS.cockpit, heroMats);
+      populateVoxelGroup(assemblies.rearWing.group, BLUEPRINTS.rearWingStatic, heroMats);
+      populateVoxelGroup(assemblies.susp.group, BLUEPRINTS.susp, heroMats);
+
+      (function () {
+        const mount = new THREE.Group();
+        mount.position.set(0, 8.2 * V, 4.3 * V);
+        mount.rotation.x = -0.32;
+        assemblies.cockpit.group.add(mount);
+
+        heroSteerWheelPivot = new THREE.Group();
+        mount.add(heroSteerWheelPivot);
+        populateVoxelGroup(heroSteerWheelPivot, STEER_WHEEL_VOXELS, heroMats, microVoxelGeo);
+      })();
+
+      (function () {
+        const drsPivot = new THREE.Group();
+        drsPivot.position.set(0, 13.5 * V, -24.5 * V);
+        drsPivot.rotation.x = -0.34;
+        assemblies.rearWing.group.add(drsPivot);
+        populateVoxelGroup(drsPivot, BLUEPRINTS.drsFlap, heroMats);
+        allDrsPivots.push(drsPivot);
+      })();
+
+      function attachArticulatedWheel(parentGroup, bp, isFront, sideSign, matSet) {
+        const hubY = (isFront ? 5.5 : 6.5) * V;
+        const hubZ = (isFront ? 19 : -19) * V;
+        const hubX = sideSign * 13.5 * V;
+
+        const hubAnchor = new THREE.Group();
+        hubAnchor.position.set(hubX, hubY, hubZ);
+        parentGroup.add(hubAnchor);
+
+        const steerNode = new THREE.Group();
+        hubAnchor.add(steerNode);
+        if (isFront) {
+          allSteerPivots.push(steerNode);
+          if (bp.brow.length > 0) {
+            populateVoxelGroup(steerNode, bp.brow, matSet);
+          }
+        }
+
+        const spinGroup = new THREE.Group();
+        steerNode.add(spinGroup);
+        populateVoxelGroup(spinGroup, bp.spin, matSet);
+        allSpinGroups.push(spinGroup);
+      }
+
+      attachArticulatedWheel(assemblies.wheelFL.group, WHEEL_BP.FL, true, 1, heroMats);
+      attachArticulatedWheel(assemblies.wheelFR.group, WHEEL_BP.FR, true, -1, heroMats);
+      attachArticulatedWheel(assemblies.wheelRL.group, WHEEL_BP.RL, false, 1, heroMats);
+      attachArticulatedWheel(assemblies.wheelRR.group, WHEEL_BP.RR, false, -1, heroMats);
+
+      // ============================================================
+      // BUILD ALL 11 F1 TEAMS STARTING GRID SHOWCASE (4 - 4 - 3 Grid)
+      // ============================================================
+      const gridShowcaseGroup = new THREE.Group();
+      scene.add(gridShowcaseGroup);
+
+      const COMBINED_STATIC_BODY = [].concat(
+        BLUEPRINTS.floor,
+        BLUEPRINTS.nose,
+        BLUEPRINTS.frontWing,
+        BLUEPRINTS.sidepodL,
+        BLUEPRINTS.sidepodR,
+        BLUEPRINTS.engine,
+        BLUEPRINTS.cockpit,
+        BLUEPRINTS.rearWingStatic,
+        BLUEPRINTS.susp
+      );
+
+      const GRID_SLOTS = [
+        { x: -13.5, z: 13.0 },
+        { x: -4.5,  z: 13.0 },
+        { x: 4.5,   z: 13.0 },
+        { x: 13.5,  z: 13.0 },
+        { x: -13.5, z: -2.5 },
+        { x: -4.5,  z: -2.5 },
+        { x: 4.5,   z: -2.5 },
+        { x: 13.5,  z: -2.5 },
+        { x: -9.0,  z: -18.0 },
+        { x: 0.0,   z: -18.0 },
+        { x: 9.0,   z: -18.0 }
+      ];
+
+      const gridCarPickBoxes = [];
+      const hitBoxGeo = new THREE.BoxGeometry(7.4, 3.8, 13.6);
+      const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+
+      F1_TEAMS.forEach(function (team, idx) {
+        const slot = GRID_SLOTS[idx];
+        const carGroup = new THREE.Group();
+        carGroup.position.set(slot.x, 0, slot.z);
+        gridShowcaseGroup.add(carGroup);
+
+        const tMats = createTeamMatSet(team);
+        populateVoxelGroup(carGroup, COMBINED_STATIC_BODY, tMats);
+
+        const swMount = new THREE.Group();
+        swMount.position.set(0, 8.2 * V, 4.3 * V);
+        swMount.rotation.x = -0.32;
+        carGroup.add(swMount);
+        populateVoxelGroup(swMount, STEER_WHEEL_VOXELS, tMats, microVoxelGeo);
+
+        const drsPivot = new THREE.Group();
+        drsPivot.position.set(0, 13.5 * V, -24.5 * V);
+        drsPivot.rotation.x = -0.34;
+        carGroup.add(drsPivot);
+        populateVoxelGroup(drsPivot, BLUEPRINTS.drsFlap, tMats);
+        allDrsPivots.push(drsPivot);
+
+        attachArticulatedWheel(carGroup, WHEEL_BP.FL, true, 1, tMats);
+        attachArticulatedWheel(carGroup, WHEEL_BP.FR, true, -1, tMats);
+        attachArticulatedWheel(carGroup, WHEEL_BP.RL, false, 1, tMats);
+        attachArticulatedWheel(carGroup, WHEEL_BP.RR, false, -1, tMats);
+
+        const hitMesh = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+        hitMesh.position.set(slot.x, 1.8, slot.z + 0.5);
+        hitMesh.userData.teamIndex = idx;
+        gridShowcaseGroup.add(hitMesh);
+        gridCarPickBoxes.push(hitMesh);
+      });
+
+      // ============================================================
+      // 3D PIXEL RACE TRACK BASEPLATES (Single-Car & 11-Team Straight)
+      // ============================================================
+      function buildPixelTrackBase(halfTilesX, halfTilesZ, slotPositions) {
+        const group = new THREE.Group();
+        const tileStep = 0.88;
+        const tileGeo = new THREE.BoxGeometry(tileStep * 0.96, 0.24, tileStep * 0.96);
+
+        const buckets = { asphalt: [], asphaltDark: [], white: [], kerbRed: [] };
+
+        function isGridBoxTile(wx, wz) {
+          for (let i = 0; i < slotPositions.length; i++) {
+            const sx = slotPositions[i].x;
+            const sz = slotPositions[i].z;
+            const dx = Math.abs(wx - sx);
+            const dz = wz - sz;
+            if (dz >= 6.8 && dz <= 7.7 && dx <= 3.7) return true;
+            if (dz >= 3.2 && dz <= 7.7 && dx >= 3.1 && dx <= 3.9) return true;
+          }
+          return false;
+        }
+
+        for (let ix = -halfTilesX; ix <= halfTilesX; ix++) {
+          for (let iz = -halfTilesZ; iz <= halfTilesZ; iz++) {
+            const wx = ix * tileStep;
+            const wz = iz * tileStep;
+            const isEdgeKerb = (Math.abs(ix) === halfTilesX);
+            const isStartFinish = (iz === halfTilesZ - 2);
+
+            let key = ((ix + iz) & 1) === 0 ? 'asphalt' : 'asphaltDark';
+            let yPos = -0.12;
+
+            if (isEdgeKerb) {
+              key = (Math.floor((iz + 100) / 2) % 2 === 0) ? 'kerbRed' : 'white';
+              yPos = -0.06;
+            } else if (isStartFinish && slotPositions.length > 1) {
+              key = ((ix + 100) % 2 === 0) ? 'white' : 'asphaltDark';
+            } else if (isGridBoxTile(wx, wz)) {
+              key = 'white';
+              yPos = -0.10;
+            }
+
+            buckets[key].push({ x: wx, y: yPos, z: wz });
+          }
+        }
+
+        const dummy = new THREE.Object3D();
+        Object.keys(buckets).forEach(function (k) {
+          const list = buckets[k];
+          if (!list.length) return;
+          const im = new THREE.InstancedMesh(tileGeo, staticMats[k], list.length);
+          im.receiveShadow = true;
+          for (let i = 0; i < list.length; i++) {
+            dummy.position.set(list[i].x, list[i].y, list[i].z);
+            dummy.updateMatrix();
+            im.setMatrixAt(i, dummy.matrix);
+          }
+          im.instanceMatrix.needsUpdate = true;
+          group.add(im);
+        });
+
+        return group;
+      }
+
+      const singleTrackBase = buildPixelTrackBase(7, 11, [{ x: 0, z: 0 }]);
+      scene.add(singleTrackBase);
+
+      const grid11TrackBase = buildPixelTrackBase(22, 31, GRID_SLOTS);
+      scene.add(grid11TrackBase);
+
+      const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(90, 90),
+        new THREE.ShadowMaterial({ opacity: 0.36 })
+      );
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.position.y = 0.002;
+      shadowPlane.receiveShadow = true;
+      scene.add(shadowPlane);
+
+      // ============================================================
+      // UI STATE, MODE SWITCHING & CONTROLS WIRING
+      // ============================================================
+      const simState = {
+        viewMode: 'grid11',
+        selectedTeamIdx: 1,
+        showBaseplate: true,
+        explodeGoal: 0,
+        explodeCurrent: 0,
+        steerGoal: 0,
+        steerCurrent: 0,
+        autoRotate: true,
+        spinWheels: false,
+        drsOpen: false,
+        drsCurrent: -0.34,
+        focusedPart: 'all'
+      };
+
+      const liveryLabel = document.getElementById('liveryLabel');
+      const liveryShortName = document.getElementById('liveryShortName');
+      const liveryDot = document.getElementById('liveryDot');
+      const brandLogo = document.getElementById('brandLogo');
+      const stageHint = document.getElementById('stageHint');
+      const teamGridEl = document.getElementById('teamGrid');
+      const camBtns = document.querySelectorAll('.cam-btn');
+
+      const teamBtnEls = [];
+      F1_TEAMS.forEach(function (team, idx) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'team-btn' + (idx === F1_TEAMS.length - 1 ? ' span-full' : '');
+        btn.setAttribute('aria-label', team.fullLabel);
+        btn.title = team.fullLabel;
+
+        const sw = document.createElement('span');
+        sw.className = 'pixel-swatch';
+        for (let c = 0; c < 4; c++) {
+          const cell = document.createElement('i');
+          cell.style.background = team.swatch[c];
+          sw.appendChild(cell);
+        }
+
+        const meta = document.createElement('span');
+        meta.className = 'team-meta';
+        const en = document.createElement('span');
+        en.className = 'team-name-en';
+        en.textContent = team.en;
+        const th = document.createElement('span');
+        th.className = 'team-name-th';
+        th.textContent = team.th;
+        meta.appendChild(en);
+        meta.appendChild(th);
+
+        btn.appendChild(sw);
+        btn.appendChild(meta);
+
+        btn.addEventListener('click', function () {
+          selectTeamAndInspect(idx);
+        });
+
+        teamGridEl.appendChild(btn);
+        teamBtnEls.push(btn);
+      });
+
+      function syncSceneVisibility() {
+        const isGrid = simState.viewMode === 'grid11';
+        gridShowcaseGroup.visible = isGrid;
+        heroCarRoot.visible = !isGrid;
+
+        grid11TrackBase.visible = isGrid && simState.showBaseplate;
+        singleTrackBase.visible = !isGrid && simState.showBaseplate;
+        updateShadowBounds(isGrid);
+
+        if (isGrid) {
+          liveryLabel.textContent = 'กริดสตาร์ท F1 ครบทั้ง 11 ทีม (3D Pixel)';
+          liveryShortName.textContent = 'ครบ 11 ทีม';
+          liveryDot.style.background = '#e10600';
+          stageHint.textContent = 'คลิกที่รถในสนามเพื่อเจาะลึกแต่ละทีม • ลากหมุน 360° • เลื่อนลูกกลิ้งเพื่อซูม';
+          teamBtnEls.forEach(function (b) { b.classList.remove('active'); });
+        } else {
+          const team = F1_TEAMS[simState.selectedTeamIdx];
+          applyTeamToMatSet(heroMats, team);
+          liveryLabel.textContent = team.fullLabel;
+          liveryShortName.textContent = team.en;
+          liveryDot.style.background = team.uiColor;
+          brandLogo.style.background = team.uiColor;
+          document.documentElement.style.setProperty('--brand', team.uiColor);
+          stageHint.textContent = 'ลากเพื่อหมุน 360° • เลื่อนลูกกลิ้งหรือหนีบนิ้วเพื่อซูม • คลิกขวาค้างเพื่อเลื่อน';
+          teamBtnEls.forEach(function (b, idx) {
+            b.classList.toggle('active', idx === simState.selectedTeamIdx);
+          });
+        }
+      }
+
+      function applyCamPreset(key) {
+        const preset = CAM_PRESETS[key] || CAM_PRESETS.iso;
+        simState.viewMode = (key === 'grid11') ? 'grid11' : 'single';
+        camState.goalTheta = preset.theta;
+        camState.goalPhi = preset.phi;
+        camState.goalRadius = preset.radius;
+        camState.goalTarget.set(preset.target[0], preset.target[1], preset.target[2]);
+
+        camBtns.forEach(function (b) {
+          b.classList.toggle('active', b.dataset.cam === key);
+        });
+        syncSceneVisibility();
+      }
+
+      function selectTeamAndInspect(teamIdx, camKeyOpt) {
+        simState.selectedTeamIdx = teamIdx;
+        if (simState.viewMode === 'grid11') {
+          applyCamPreset(camKeyOpt || 'iso');
+        } else {
+          syncSceneVisibility();
+          if (camKeyOpt) applyCamPreset(camKeyOpt);
+        }
+      }
+
+      function clearActiveCamPreset() {
+        camBtns.forEach(function (b) {
+          if (b.dataset.cam !== 'grid11' || simState.viewMode !== 'grid11') {
+            b.classList.remove('active');
+          }
+        });
+      }
+
+      camBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const key = btn.dataset.cam;
+          if (key !== 'grid11') {
+            simState.autoRotate = false;
+            document.getElementById('autoRotateToggle').checked = false;
+          }
+          applyCamPreset(key);
+        });
+      });
+
+      document.getElementById('resetCamBtn').addEventListener('click', function () {
+        applyCamPreset(simState.viewMode === 'grid11' ? 'grid11' : 'iso');
+      });
+
+      const explodeRange = document.getElementById('explodeRange');
+      const explodeValue = document.getElementById('explodeValue');
+      explodeRange.addEventListener('input', function () {
+        const val = Number(explodeRange.value);
+        simState.explodeGoal = val / 100;
+        explodeValue.textContent = val + '%';
+        if (val > 0 && simState.viewMode === 'grid11') {
+          selectTeamAndInspect(simState.selectedTeamIdx, 'iso');
+        }
+      });
+
+      const steerRange = document.getElementById('steerRange');
+      const steerValue = document.getElementById('steerValue');
+      steerRange.addEventListener('input', function () {
+        const deg = Number(steerRange.value);
+        simState.steerGoal = THREE.MathUtils.degToRad(deg);
+        steerValue.textContent = (deg > 0 ? '+' : '') + deg + '°';
+      });
+
+      document.getElementById('autoRotateToggle').addEventListener('change', function (e) {
+        simState.autoRotate = e.target.checked;
+      });
+
+      document.getElementById('wheelSpinToggle').addEventListener('change', function (e) {
+        simState.spinWheels = e.target.checked;
+      });
+
+      document.getElementById('drsToggle').addEventListener('change', function (e) {
+        simState.drsOpen = e.target.checked;
+      });
+
+      document.getElementById('baseplateToggle').addEventListener('change', function (e) {
+        simState.showBaseplate = e.target.checked;
+        syncSceneVisibility();
+      });
+
+      const partBtns = document.querySelectorAll('.part-btn');
+      const focusPartLabel = document.getElementById('focusPartLabel');
+      const PART_NAMES = {
+        all: 'ทั้งคัน',
+        frontWing: 'ปีกหน้า & จมูกรถ',
+        cockpit: 'ห้องนักขับ & Halo',
+        body: 'ไซด์พอด & ฝาเครื่อง',
+        rearWing: 'ปีกหลัง DRS',
+        wheels: 'ล้อ & ช่วงล่าง'
+      };
+
+      function setGroupVisibilityFocus(selectedKey) {
+        Object.keys(assemblies).forEach(function (k) {
+          const item = assemblies[k];
+          item.group.visible = (selectedKey === 'all' || item.partKey === selectedKey);
+        });
+      }
+
+      partBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const key = btn.dataset.part;
+          simState.focusedPart = key;
+          partBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          focusPartLabel.textContent = PART_NAMES[key] || 'ทั้งคัน';
+          setGroupVisibilityFocus(key);
+
+          if (simState.viewMode === 'grid11') {
+            selectTeamAndInspect(simState.selectedTeamIdx, key === 'cockpit' ? 'cockpit' : (key === 'frontWing' ? 'front' : (key === 'rearWing' ? 'rear' : 'iso')));
+          } else {
+            if (key === 'frontWing') applyCamPreset('front');
+            else if (key === 'cockpit') applyCamPreset('cockpit');
+            else if (key === 'rearWing') applyCamPreset('rear');
+            else if (key === 'all') applyCamPreset('iso');
+          }
+        });
+      });
+
+      // ============================================================
+      // POINTER ORBIT / ZOOM / PAN + CLICK-TO-SELECT CAR IN 11-GRID
+      // ============================================================
+      let isDragging = false;
+      let dragMode = 'orbit';
+      let prevPointer = { x: 0, y: 0 };
+      let downPointer = { x: 0, y: 0 };
+      const activePointers = new Map();
+      let prevPinchDist = null;
+      const raycaster = new THREE.Raycaster();
+      const ndcMouse = new THREE.Vector2();
+
+      canvas.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+      });
+
+      canvas.addEventListener('pointerdown', function (e) {
+        canvas.setPointerCapture(e.pointerId);
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointers.size === 1) {
+          isDragging = true;
+          dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'orbit';
+          prevPointer.x = e.clientX;
+          prevPointer.y = e.clientY;
+          downPointer.x = e.clientX;
+          downPointer.y = e.clientY;
+        } else if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          prevPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        }
+      });
+
+      canvas.addEventListener('pointermove', function (e) {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        const minR = simState.viewMode === 'grid11' ? 16.0 : 8.5;
+        const maxR = simState.viewMode === 'grid11' ? 76.0 : 35.0;
+
+        if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          if (prevPinchDist !== null) {
+            const delta = prevPinchDist - dist;
+            camState.goalRadius = THREE.MathUtils.clamp(camState.goalRadius + delta * 0.07, minR, maxR);
+          }
+          prevPinchDist = dist;
+          return;
+        }
+
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+
+        if (dragMode === 'orbit') {
+          camState.goalTheta -= dx * 0.0072;
+          camState.goalPhi = THREE.MathUtils.clamp(camState.goalPhi - dy * 0.0062, 0.22, Math.PI / 2 - 0.05);
+          if (Math.hypot(e.clientX - downPointer.x, e.clientY - downPointer.y) > 4) {
+            clearActiveCamPreset();
+          }
+        } else {
+          const panScale = camState.radius * 0.0014;
+          const right = new THREE.Vector3();
+          const up = new THREE.Vector3(0, 1, 0);
+          camera.getWorldDirection(right);
+          right.cross(up).normalize();
+          camState.goalTarget.addScaledVector(right, -dx * panScale);
+          camState.goalTarget.y = THREE.MathUtils.clamp(camState.goalTarget.y + dy * panScale, 0.2, 8.0);
+        }
+      });
+
+      function endPointer(e) {
+        const wasSingleTap = (
+          activePointers.size === 1 &&
+          e.button === 0 &&
+          Math.hypot(e.clientX - downPointer.x, e.clientY - downPointer.y) < 5
+        );
+
+        activePointers.delete(e.pointerId);
+        if (activePointers.size < 2) prevPinchDist = null;
+        if (activePointers.size === 0) isDragging = false;
+
+        if (wasSingleTap && simState.viewMode === 'grid11') {
+          const rect = canvas.getBoundingClientRect();
+          ndcMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          ndcMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(ndcMouse, camera);
+          const hits = raycaster.intersectObjects(gridCarPickBoxes, false);
+          if (hits.length > 0) {
+            const pickedIdx = hits[0].object.userData.teamIndex;
+            if (typeof pickedIdx === 'number') {
+              selectTeamAndInspect(pickedIdx, 'iso');
+            }
+          }
+        }
+      }
+      canvas.addEventListener('pointerup', endPointer);
+      canvas.addEventListener('pointercancel', endPointer);
+
+      canvas.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        const minR = simState.viewMode === 'grid11' ? 16.0 : 8.5;
+        const maxR = simState.viewMode === 'grid11' ? 76.0 : 35.0;
+        camState.goalRadius = THREE.MathUtils.clamp(camState.goalRadius + e.deltaY * 0.022, minR, maxR);
+      }, { passive: false });
+
+      syncSceneVisibility();
+
+      function resizeRenderer() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const w = Math.max(1, rect.width);
+        const h = Math.max(1, rect.height);
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+
+      window.addEventListener('resize', resizeRenderer);
+      if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(resizeRenderer).observe(canvas.parentElement);
+      }
+      resizeRenderer();
+
+      statusOverlay.hidden = true;
+
+      let lastTime = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dt = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+
+        if (simState.autoRotate && !isDragging && activePointers.size === 0) {
+          camState.goalTheta += dt * (simState.viewMode === 'grid11' ? 0.16 : 0.28);
+        }
+
+        const damp = 1 - Math.exp(-8.5 * dt);
+        camState.theta += (camState.goalTheta - camState.theta) * damp;
+        camState.phi += (camState.goalPhi - camState.phi) * damp;
+        camState.radius += (camState.goalRadius - camState.radius) * damp;
+        camState.target.lerp(camState.goalTarget, damp);
+
+        camera.position.x = camState.target.x + camState.radius * Math.sin(camState.phi) * Math.sin(camState.theta);
+        camera.position.y = camState.target.y + camState.radius * Math.cos(camState.phi);
+        camera.position.z = camState.target.z + camState.radius * Math.sin(camState.phi) * Math.cos(camState.theta);
+        camera.lookAt(camState.target);
+
+        simState.explodeCurrent += (simState.explodeGoal - simState.explodeCurrent) * damp;
+        Object.keys(assemblies).forEach(function (k) {
+          const item = assemblies[k];
+          item.group.position.copy(item.offset).multiplyScalar(simState.explodeCurrent);
+        });
+
+        simState.steerCurrent += (simState.steerGoal - simState.steerCurrent) * (1 - Math.exp(-12 * dt));
+        for (let i = 0; i < allSteerPivots.length; i++) {
+          allSteerPivots[i].rotation.y = -simState.steerCurrent;
+        }
+        if (heroSteerWheelPivot) {
+          heroSteerWheelPivot.rotation.z = -simState.steerCurrent * 2.2;
+        }
+
+        const drsTarget = simState.drsOpen ? -0.02 : -0.34;
+        simState.drsCurrent += (drsTarget - simState.drsCurrent) * (1 - Math.exp(-10 * dt));
+        for (let i = 0; i < allDrsPivots.length; i++) {
+          allDrsPivots[i].rotation.x = simState.drsCurrent;
+        }
+
+        if (simState.spinWheels) {
+          const spinDelta = dt * 16.0;
+          for (let i = 0; i < allSpinGroups.length; i++) {
+            allSpinGroups[i].rotation.x += spinDelta;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
